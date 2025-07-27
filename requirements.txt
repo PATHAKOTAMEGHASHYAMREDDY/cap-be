@@ -106,3 +106,4 @@ regex>=2023.8.8,<2024.0.0
 
 # PDF Generation
 reportlab>=4.0.4,<5.0.0
+cloudinary==1.36.0
