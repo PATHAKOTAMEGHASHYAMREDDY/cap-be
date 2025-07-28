@@ -50,6 +50,53 @@ def load_model():
 # Load model on import
 load_model()
 
+def validate_image_for_medical_scan(file_bytes):
+    """
+    Simple validation to reject obvious color photographs
+    Only rejects clearly colorful images like photos of people, objects, etc.
+    
+    Args:
+        file_bytes: Raw image file bytes
+        
+    Returns:
+        dict: Validation result with is_valid boolean and reason
+    """
+    try:
+        # Open image for analysis
+        image = Image.open(io.BytesIO(file_bytes))
+        image_array = np.array(image)
+        
+        # Only check if image is obviously colorful
+        if len(image_array.shape) == 3:
+            # Check if image has significant color variation (like photos)
+            r, g, b = image_array[:,:,0], image_array[:,:,1], image_array[:,:,2]
+            
+            # Calculate color differences across the image
+            color_diff = np.mean(np.abs(r.astype(float) - g.astype(float))) + \
+                        np.mean(np.abs(g.astype(float) - b.astype(float))) + \
+                        np.mean(np.abs(r.astype(float) - b.astype(float)))
+            
+            # If there's significant color difference, it's likely a colorful photo
+            if color_diff > 20:  # Threshold for obvious color photos
+                return {
+                    'is_valid': False,
+                    'reason': 'This appears to be a color photograph. Please upload a medical scan (MRI, CT, X-ray, etc.).'
+                }
+        
+        # If it passes the basic color check, allow it
+        return {
+            'is_valid': True,
+            'reason': 'Image accepted for analysis.'
+        }
+        
+    except Exception as e:
+        logger.error(f"Image validation error: {str(e)}")
+        # If validation fails, allow the image to proceed
+        return {
+            'is_valid': True,
+            'reason': 'Validation skipped due to error.'
+        }
+
 def preprocess_image_from_bytes(file_bytes):
     """
     Preprocess image from bytes for model prediction
@@ -61,6 +108,11 @@ def preprocess_image_from_bytes(file_bytes):
         numpy.ndarray: Preprocessed image array ready for prediction
     """
     try:
+        # Simple validation to reject obvious color photos
+        validation_result = validate_image_for_medical_scan(file_bytes)
+        if not validation_result['is_valid']:
+            raise ValueError(validation_result['reason'])
+        
         image = Image.open(io.BytesIO(file_bytes)).resize((150, 150))
         image_array = np.array(image)
 
