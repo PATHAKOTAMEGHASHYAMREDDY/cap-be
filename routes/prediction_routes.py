@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import os
 import logging
+import tempfile
+from io import BytesIO
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import cloudinary
@@ -382,6 +384,77 @@ def generate_report():
         logger.error(f"Report generation error: {str(e)}")
         return jsonify({
             'error': 'Report generation failed',
+            'message': str(e)
+        }), 500
+
+@prediction_bp.route('/upload-pdf-report', methods=['POST'])
+def upload_pdf_report():
+    """Upload PDF report to Cloudinary"""
+    try:
+        # Check if PDF file is in request
+        if 'pdf' not in request.files:
+            return jsonify({
+                'error': 'No PDF file provided',
+                'message': 'PDF file is required'
+            }), 400
+        
+        pdf_file = request.files['pdf']
+        
+        if pdf_file.filename == '':
+            return jsonify({
+                'error': 'No file selected',
+                'message': 'Please select a PDF file'
+            }), 400
+        
+        # Validate file type
+        if not pdf_file.filename.lower().endswith('.pdf'):
+            return jsonify({
+                'error': 'Invalid file type',
+                'message': 'Only PDF files are allowed'
+            }), 400
+        
+        # Read PDF data
+        pdf_data = pdf_file.read()
+        
+        if len(pdf_data) == 0:
+            return jsonify({
+                'error': 'Empty file',
+                'message': 'PDF file is empty'
+            }), 400
+        
+        # Upload directly to Cloudinary using BytesIO (no temporary file needed)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        temp_filename = f"medical_report_{timestamp}.pdf"
+        
+        # Create BytesIO object from PDF data
+        pdf_buffer = BytesIO(pdf_data)
+        
+        # Upload to Cloudinary directly from buffer
+        upload_result = cloudinary.uploader.upload(
+            pdf_buffer,
+            folder="medical_ai/reports",
+            public_id=f"{timestamp}_{secure_filename(pdf_file.filename)}",
+            resource_type="raw",
+            format="pdf"
+        )
+        
+        # Close buffer
+        pdf_buffer.close()
+        
+        logger.info(f"PDF report uploaded to Cloudinary: {upload_result['secure_url']}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'PDF uploaded to Cloudinary successfully',
+            'cloudinary_url': upload_result['secure_url'],
+            'public_id': upload_result['public_id'],
+            'filename': temp_filename
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error uploading PDF to Cloudinary: {str(e)}")
+        return jsonify({
+            'error': 'PDF upload failed',
             'message': str(e)
         }), 500
 
