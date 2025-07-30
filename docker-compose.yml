@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  medical-ai-backend:
+    build: .
+    container_name: medical-ai-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./static/reports:/app/static/reports
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - medical-ai-network
+
+networks:
+  medical-ai-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  logs:
+  reports:
