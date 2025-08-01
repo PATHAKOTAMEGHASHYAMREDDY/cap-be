@@ -4,7 +4,6 @@ from models.user import UserOperations
 import logging
 from datetime import datetime
 import re
-
 # Create blueprint
 user_bp = Blueprint('users', __name__)
 logger = logging.getLogger(__name__)
