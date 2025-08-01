@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def configure_cloudinary():
-    """Configure Cloudinary with credentials"""
+    """Configure Cloudinary with credentials from environment variables"""
     cloudinary.config(
-        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME", "dktvtxucf"),
-        api_key=os.getenv("CLOUDINARY_API_KEY", "323414932774916"),
-        api_secret=os.getenv("CLOUDINARY_API_SECRET", "QXMWwaknKWEjJ5hIAC6xKSxeq08"),
+        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.getenv("CLOUDINARY_API_KEY"),
+        api_secret=os.getenv("CLOUDINARY_API_SECRET"),
         secure=True
     )
 
