@@ -25,4 +25,4 @@ dist-ssr
 .env
 __pycache__
 venv
-efficient_net_B0.h5
+trainedmodels/efficient_net_B0.h5
